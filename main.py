@@ -15,7 +15,9 @@ def dump(tok):
     futures = [pool.submit(check, proxy, tok) for proxy in proxies]
     for future in as_completed(futures):
         result = future.result()
-        if result
+        if result:
+            return Response(result.iter_content(chunk_size=2000), content_type='video/mp4')
+
         
 
 def check(proxy,tok):
@@ -31,7 +33,7 @@ def check(proxy,tok):
     if not 'ddos' in log2.text.lower():
         link=host+"/pass_md5/"+re.search("/pass_md5/(.*?)', function",str(log2.text)).group(1)
         result = ses.get(link,headers={"Host": host.replace('https://',''),"referer": log2.url,"accept-encoding": "gzip","cookie": "lang=1","user-agent": "okhttp/4.9.0"}).text+"".join([random.choice('abcdefghijklmnopqrstuvwxyz1234567890') for _ in range(10)])+"?token="+link.split("/")[-1]+"&expiry=1"+"".join([str(random.randrange(1,9)) for _ in range(12)])
-        videos = ses.get(link,headers={'Range': 'bytes=0-', 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) coc_coc_browser/83.0.144 Chrome/77.0.3865.144 Safari/537.36', 'Referer': 'https://dooood.com/', 'Host': 'no951gt.video-delivery.net', 'Connection': 'Keep-Alive', 'Accept-Encoding': 'gzip'},stream=True)
+        videos = ses.get(result,headers={'Range': 'bytes=0-', 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) coc_coc_browser/83.0.144 Chrome/77.0.3865.144 Safari/537.36', 'Referer': 'https://dooood.com/', 'Connection': 'Keep-Alive', 'Accept-Encoding': 'gzip'},stream=True)
         return videos
         #myresult = {'result': result,'IP':proxy['http']}
         # bagaimana agar saya bisa me return myresult ke user
@@ -45,7 +47,17 @@ def unduh():
     tok=request.args.get('token')
     if tok:pass
     else:return {'return':'need params token'}
-    dump(tok)
+    proxy = requests.get('https://api.proxyscrape.com/?request=displayproxies&proxytype=socks4&timeout=10000&country=all&ssl=all&anonymity=all').text
+    proxies = np.char.replace(proxy.split('\n')[:-1],'\r','')
+    with ThreadPoolExecutor(max_workers=500) as pool:
+      futures = [pool.submit(check, proxy, tok) for proxy in proxies]
+      for future in as_completed(futures):
+          result = future.result()
+          try:
+                if result.headers['Content-Type']=='video/mp4':
+                    pool.shutdown(wait=True)
+                    return Response(result.raw, content_type='video/mp4')
+          except Exception as e:pass
   except Exception as e:
     return {'result':str(e)}
 
@@ -74,5 +86,5 @@ def read():
     result = requests.get(link,headers={'Range': 'bytes=0-', 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) coc_coc_browser/83.0.144 Chrome/77.0.3865.144 Safari/537.36', 'Referer': 'https://dooood.com/', 'Host': 'no951gt.video-delivery.net', 'Connection': 'Keep-Alive', 'Accept-Encoding': 'gzip','X-Forwarded-For':ip},stream=True)
     return result.raw
   else:return {'return':'need params link'}
-app.run(port=8888,debug=True)
+#app.run(port=8880,debug=True)
 
